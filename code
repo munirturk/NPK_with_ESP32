@@ -1,0 +1,146 @@
+/*    ________________________
+     |    Simya Software      |
+     |      Munir Turk        |
+     |  *ESP32 ve NPK Kodu*   |
+     |     Ağustos 2022       |
+     |________________________|
+ */
+
+// NPK'dan gelen  *KIRMIZI kablo ESP32'nin      *5V una bağlanmalıdır
+// NPK'dan gelen  *SIYAH kablo ESP32'nin        *GND sine bağlanmalıdır
+// NPK'dan gelen  *MOR D1 kablosu ESP32'nin     *27 sine bağlanmalıdır
+// NPK'dan gelen  *SARI R0 kablosu ESP32'nin    *26 sına bağlanmalıdır
+// NPK'dan gelen  *GRI DE kablosu ESP32'nin     *33 una bağlanmalıdır
+// NPK'dan gelen  *TURUNCU RE kablosu ESP32'nin *32 sine bağlanmalıdır
+
+// Not: Role ve lcd ekran koduda icerisindedir
+
+#include <SoftwareSerial.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <LiquidCrystal_I2C.h>
+ 
+#define RE 32
+#define DE 33
+
+const byte nitro[] = {0x01,0x03, 0x00, 0x1e, 0x00, 0x01, 0xe4, 0x0c};
+const byte phos[] = {0x01,0x03, 0x00, 0x1f, 0x00, 0x01, 0xb5, 0xcc};
+const byte pota[] = {0x01,0x03, 0x00, 0x20, 0x00, 0x01, 0x85, 0xc0};
+
+const int relay1 = 2; 
+
+byte values[11];
+SoftwareSerial mod(26, 27);
+
+int lcdColumns = 16;
+int lcdRows = 2;
+LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);  
+ 
+void setup() {
+  
+  Serial.begin(9600);
+  mod.begin(9600);
+  pinMode(RE, OUTPUT);
+  pinMode(DE, OUTPUT);
+  
+  pinMode(relay1, OUTPUT); 
+
+  
+  lcd.init();                     
+  lcd.backlight();
+  
+}
+ 
+void loop() {
+  byte val1,val2,val3;
+  val1 = nitrogen();
+  delay(250);
+  val2 = phosphorous();
+  delay(250);
+  val3 = potassium();
+  delay(250);
+  
+  
+  Serial.print("Nitrogen: ");
+  Serial.print(val1);
+  Serial.println(" mg/kg");
+  Serial.print("Phosphorous: ");
+  Serial.print(val2);
+  Serial.println(" mg/kg");
+  Serial.print("Potassium: ");
+  Serial.print(val3);
+  Serial.println(" mg/kg");
+ // delay(2000);
+  
+ if ( val1 >= 255 ) { digitalWrite(relay1, HIGH );
+ lcd.setCursor(0,0);
+ lcd.print("Sensor ERROR "); 
+  }
+  
+ else { digitalWrite(relay1, LOW);
+  lcd.setCursor(0,0);
+  lcd.print("Azot:");
+  lcd.print(val1);
+  lcd.setCursor(0,1);
+  lcd.print("Fosfor:");
+  lcd.print(val2);
+  lcd.setCursor(0,2);
+  lcd.print("Potasyum: ");
+  lcd.print(val3);
+ }
+ 
+ delay(1000);
+ lcd.clear(); 
+  
+}
+ 
+byte nitrogen(){
+  digitalWrite(DE,HIGH);
+  digitalWrite(RE,HIGH);
+  delay(10);
+  if(mod.write(nitro,sizeof(nitro))==8){
+    digitalWrite(DE,LOW);
+    digitalWrite(RE,LOW);
+    for(byte i=0;i<7;i++){
+    //Serial.print(mod.read(),HEX);
+    values[i] = mod.read();
+    Serial.print(values[i],HEX);
+    }
+    Serial.println();
+  }
+  return values[4];
+}
+ 
+byte phosphorous(){
+  digitalWrite(DE,HIGH);
+  digitalWrite(RE,HIGH);
+  delay(10);
+  if(mod.write(phos,sizeof(phos))==8){
+    digitalWrite(DE,LOW);
+    digitalWrite(RE,LOW);
+    for(byte i=0;i<7;i++){
+    //Serial.print(mod.read(),HEX);
+    values[i] = mod.read();
+    Serial.print(values[i],HEX);
+    }
+    Serial.println();
+  }
+  return values[4];
+}
+ 
+byte potassium(){
+  digitalWrite(DE,HIGH);
+  digitalWrite(RE,HIGH);
+  delay(10);
+  if(mod.write(pota,sizeof(pota))==8){
+    digitalWrite(DE,LOW);
+    digitalWrite(RE,LOW);
+    for(byte i=0;i<7;i++){
+    //Serial.print(mod.read(),HEX);
+    values[i] = mod.read();
+    Serial.print(values[i],HEX);
+    }
+    Serial.println();
+  }
+  return values[4];
+}
